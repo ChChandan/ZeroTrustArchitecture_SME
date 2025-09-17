@@ -1,0 +1,10 @@
+{
+  "realm": "SME",
+  "auth-server-url": "http://localhost:8080/",
+  "ssl-required": "external",
+  "resource": "flask-app",
+  "credentials": {
+    "secret": "Sybxfb5H1lLtsSWoFlpVp3p3gdAFFkAo"
+  },
+  "confidential-port": 0
+}
