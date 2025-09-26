@@ -8,7 +8,7 @@ const DebugInfo = ({ isAuthenticated, user, keycloakState, error }) => {
   if (process.env.NODE_ENV !== 'development') return null;
   
   return (
-    <div className="fixed top-0 right-0 bg-black text-white p-4 text-xs max-w-sm z-50">
+    <div className="fixed top-0 right-0 bg-black text-white p-4 text-xs max-w-sm z-50" hidden>
       <h4>Debug Info:</h4>
       <div>Authenticated: {isAuthenticated ? 'YES' : 'NO'}</div>
       <div>Keycloak Ready: {keycloakState}</div>
@@ -66,12 +66,12 @@ const LoginPage = ({ keycloakError, onManualCheck }) => {
           <button
             onClick={onManualCheck}
             className="w-full py-2 px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm rounded-lg transition-colors"
-          >
+          hidden>
             Check Auth Status
           </button>
         </div>
         
-        <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded">
+        <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded" hidden>
           <div>Keycloak URL: {keycloak.authServerUrl || 'Not set'}</div>
           <div>Realm: {keycloak.realm || 'Not set'}</div>
           <div>Client ID: {keycloak.clientId || 'Not set'}</div>
@@ -311,7 +311,7 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-50" >
         <DebugInfo 
           isAuthenticated={isAuthenticated}
           user={user}
