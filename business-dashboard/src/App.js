@@ -1,69 +1,93 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
 import keycloak from './keycloak';
 
-// Login Page Component
-const LoginPage = ({ onLogin, keycloakError }) => {
-  const navigate = useNavigate();
+// Debug component to show current state
+const DebugInfo = ({ isAuthenticated, user, keycloakState, error }) => {
+  if (process.env.NODE_ENV !== 'development') return null;
   
+  return (
+    <div className="fixed top-0 right-0 bg-black text-white p-4 text-xs max-w-sm z-50">
+      <h4>Debug Info:</h4>
+      <div>Authenticated: {isAuthenticated ? 'YES' : 'NO'}</div>
+      <div>Keycloak Ready: {keycloakState}</div>
+      <div>User: {user ? user.name : 'None'}</div>
+      <div>Token: {keycloak.token ? 'Present' : 'None'}</div>
+      <div>URL: {window.location.pathname}</div>
+      <div>Error: {error || 'None'}</div>
+      <div>Keycloak Authenticated: {keycloak.authenticated ? 'YES' : 'NO'}</div>
+    </div>
+  );
+};
+
+// Simple Login Page
+const LoginPage = ({ keycloakError, onManualCheck }) => {
+  const [isLogging, setIsLogging] = useState(false);
+
   const handleLogin = () => {
-    // Redirect to Keycloak login - it will come back to the current URL
+    console.log('=== LOGIN BUTTON CLICKED ===');
+    console.log('Current URL:', window.location.href);
+    console.log('Keycloak authenticated before login:', keycloak.authenticated);
+    
+    setIsLogging(true);
+    
     keycloak.login({
-      redirectUri: window.location.origin + window.location.pathname
+      redirectUri: window.location.origin + '/dashboard'
+    }).catch(error => {
+      console.error('Login failed:', error);
+      setIsLogging(false);
     });
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <div className="mx-auto h-12 w-12 text-indigo-600">
-            <svg className="h-12 w-12" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
-            </svg>
-          </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to your account
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            BusinessPro Dashboard
-          </p>
+      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900">BusinessPro</h2>
+          <p className="mt-2 text-gray-600">Sign in to continue</p>
         </div>
         
         {keycloakError && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-            <p className="text-sm">Authentication Error: {keycloakError}</p>
+            <p className="text-sm">{keycloakError}</p>
           </div>
         )}
         
-        <div className="mt-8 space-y-6">
+        <div className="space-y-4">
           <button
             onClick={handleLogin}
-            className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+            disabled={isLogging}
+            className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium rounded-lg transition-colors"
           >
-            <span className="absolute left-0 inset-y-0 flex items-center pl-3">
-              <svg className="h-5 w-5 text-indigo-500 group-hover:text-indigo-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-              </svg>
-            </span>
-            Sign in with Keycloak
+            {isLogging ? 'Redirecting to Keycloak...' : 'Sign in with Keycloak'}
           </button>
           
-          <div className="text-center text-xs text-gray-500">
-            Secure authentication powered by Keycloak
-          </div>
+          <button
+            onClick={onManualCheck}
+            className="w-full py-2 px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm rounded-lg transition-colors"
+          >
+            Check Auth Status
+          </button>
+        </div>
+        
+        <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded">
+          <div>Keycloak URL: {keycloak.authServerUrl || 'Not set'}</div>
+          <div>Realm: {keycloak.realm || 'Not set'}</div>
+          <div>Client ID: {keycloak.clientId || 'Not set'}</div>
+          <div>Current Keycloak State: {keycloak.authenticated ? 'Authenticated' : 'Not Authenticated'}</div>
         </div>
       </div>
     </div>
   );
 };
 
-// Dashboard Page Component
-const DashboardPage = ({ user, keycloakInstance }) => {
+// Dashboard wrapper
+const DashboardPage = ({ user }) => {
   const handleLogout = () => {
-    keycloakInstance.logout({
-      redirectUri: window.location.origin + '/login'
+    console.log('=== LOGOUT CLICKED ===');
+    keycloak.logout({
+      redirectUri: window.location.origin
     });
   };
 
@@ -72,122 +96,127 @@ const DashboardPage = ({ user, keycloakInstance }) => {
       isAuthenticated={true}
       user={user}
       onLogout={handleLogout}
-      keycloak={keycloakInstance}
+      keycloak={keycloak}
     />
   );
 };
 
-// Protected Route Component
-const ProtectedRoute = ({ children, isAuthenticated, isLoading }) => {
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Checking authentication...</p>
-        </div>
-      </div>
-    );
-  }
-  
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
-};
-
-// Auth Handler Component - processes authentication state changes
-const AuthHandler = ({ 
-  isAuthenticated, 
-  isLoading, 
-  onAuthStateChange 
-}) => {
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    // If we just got authenticated and we're on login page, redirect to dashboard
-    if (isAuthenticated && !isLoading && location.pathname === '/login') {
-      console.log('User authenticated, redirecting to dashboard');
-      navigate('/dashboard', { replace: true });
-    }
-    
-    // If not authenticated and trying to access protected route, redirect to login
-    if (!isAuthenticated && !isLoading && location.pathname === '/dashboard') {
-      console.log('User not authenticated, redirecting to login');
-      navigate('/login', { replace: true });
-    }
-  }, [isAuthenticated, isLoading, location.pathname, navigate]);
-
-  return null; // This component doesn't render anything
-};
-
-// Main App Component
+// Main App
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [keycloakError, setKeycloakError] = useState(null);
-  const [keycloakInitialized, setKeycloakInitialized] = useState(false);
+  const [error, setError] = useState(null);
+  const [keycloakState, setKeycloakState] = useState('initializing');
 
-  // Function to load user profile
-  const loadUserProfile = async () => {
+  // Manual auth check function
+  const checkAuthStatus = () => {
+    console.log('=== MANUAL AUTH CHECK ===');
+    console.log('Keycloak authenticated:', keycloak.authenticated);
+    console.log('Keycloak token:', keycloak.token ? 'Present' : 'None');
+    console.log('Keycloak token parsed:', keycloak.tokenParsed);
+    console.log('Current state - isAuthenticated:', isAuthenticated);
+    console.log('Current user:', user);
+    
+    if (keycloak.authenticated && !isAuthenticated) {
+      console.log('Keycloak says authenticated but app state says not - fixing...');
+      setIsAuthenticated(true);
+      loadUserData();
+    }
+  };
+
+  // Load user data
+  const loadUserData = async () => {
     try {
+      console.log('Loading user data...');
       const profile = await keycloak.loadUserProfile();
-      return {
-        name: `${profile.firstName || ''} ${profile.lastName || ''}`.trim() || profile.username,
+      const userData = {
+        name: `${profile.firstName || ''} ${profile.lastName || ''}`.trim() || profile.username || 'User',
         email: profile.email,
         username: profile.username,
         firstName: profile.firstName,
         lastName: profile.lastName,
-        roles: keycloak.realmAccess?.roles || [],
-        token: keycloak.token,
-        refreshToken: keycloak.refreshToken
+        roles: keycloak.realmAccess?.roles || []
       };
+      console.log('User data loaded:', userData);
+      setUser(userData);
+      return userData;
     } catch (profileError) {
-      console.warn('Could not load user profile, using token data:', profileError);
+      console.warn('Profile loading failed, using token data:', profileError);
       const tokenParsed = keycloak.tokenParsed;
-      return {
+      const userData = {
         name: tokenParsed?.name || tokenParsed?.preferred_username || 'User',
         email: tokenParsed?.email || '',
         username: tokenParsed?.preferred_username || '',
         firstName: tokenParsed?.given_name || '',
         lastName: tokenParsed?.family_name || '',
-        roles: keycloak.realmAccess?.roles || [],
-        token: keycloak.token,
-        refreshToken: keycloak.refreshToken
+        roles: keycloak.realmAccess?.roles || []
       };
+      console.log('Fallback user data:', userData);
+      setUser(userData);
+      return userData;
     }
   };
 
   // Initialize Keycloak
   useEffect(() => {
+    console.log('=== INITIALIZING KEYCLOAK ===');
+    console.log('Current URL:', window.location.href);
+    console.log('URL has code param:', window.location.search.includes('code='));
+    
     const initKeycloak = async () => {
       try {
-        console.log('Initializing Keycloak...');
+        setKeycloakState('connecting');
         
-        const authenticated = await keycloak.init({
-          onLoad: 'check-sso',
-          silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
-          pkceMethod: 'S256',
+        // Check if this is a callback from Keycloak (has 'code' parameter)
+        const urlParams = new URLSearchParams(window.location.search);
+        const isCallback = urlParams.has('code') && urlParams.has('state');
+        
+        console.log('Is callback URL:', isCallback);
+        
+        const initOptions = {
+          onLoad: isCallback ? 'login-required' : 'check-sso',
           checkLoginIframe: false,
-          // This is crucial - it handles the callback properly
-          flow: 'standard'
-        });
-
-        console.log('Keycloak initialized. Authenticated:', authenticated);
-        setKeycloakInitialized(true);
+          pkceMethod: 'S256'
+        };
+        
+        console.log('Keycloak init options:', initOptions);
+        
+        const authenticated = await keycloak.init(initOptions);
+        
+        console.log('=== KEYCLOAK INIT COMPLETE ===');
+        console.log('Authenticated:', authenticated);
+        console.log('Token present:', !!keycloak.token);
+        console.log('Token parsed:', keycloak.tokenParsed);
+        
+        setKeycloakState('ready');
         setIsAuthenticated(authenticated);
-
+        
         if (authenticated) {
           console.log('User is authenticated, loading profile...');
-          const userData = await loadUserProfile();
-          setUser(userData);
-          console.log('User profile loaded:', userData);
+          await loadUserData();
+          
+          // If we're on login page and authenticated, redirect to dashboard
+          if (window.location.pathname === '/login' || window.location.pathname === '/') {
+            console.log('Authenticated user on login page, redirecting to dashboard');
+            window.location.replace('/dashboard');
+            return;
+          }
         } else {
           console.log('User not authenticated');
+          // If we're trying to access dashboard but not authenticated, redirect to login
+          if (window.location.pathname === '/dashboard') {
+            console.log('Unauthenticated user on dashboard, redirecting to login');
+            window.location.replace('/login');
+            return;
+          }
         }
-
-      } catch (error) {
-        console.error('Keycloak initialization failed:', error);
-        //setKeycloakError(error.message || 'Authentication service unavailable');
+        
+      } catch (initError) {
+        console.error('=== KEYCLOAK INIT FAILED ===');
+        console.error('Error:', initError);
+        setKeycloakState('error');
+        //setError(initError.message || 'Keycloak initialization failed');
       } finally {
         setLoading(false);
       }
@@ -196,112 +225,70 @@ function App() {
     initKeycloak();
   }, []);
 
-  // Setup Keycloak event listeners
+  // Set up Keycloak event listeners
   useEffect(() => {
-    if (!keycloakInitialized) return;
-
     console.log('Setting up Keycloak event listeners...');
-
-    // Token expired - try to refresh
-    keycloak.onTokenExpired = () => {
-      console.log('Token expired, attempting refresh...');
-      keycloak.updateToken(30)
-        .then((refreshed) => {
-          if (refreshed) {
-            console.log('Token refreshed successfully');
-            setUser(prev => prev ? {
-              ...prev,
-              token: keycloak.token,
-              refreshToken: keycloak.refreshToken
-            } : null);
-          }
-        })
-        .catch((error) => {
-          console.error('Token refresh failed:', error);
-          handleLogout();
-        });
-    };
-
-    // Authentication success
-    keycloak.onAuthSuccess = async () => {
-      console.log('Authentication successful');
-      setKeycloakError(null);
+    
+    keycloak.onAuthSuccess = () => {
+      console.log('=== AUTH SUCCESS EVENT ===');
+      setError(null);
       setIsAuthenticated(true);
-      
-      // Load user profile after successful authentication
-      try {
-        const userData = await loadUserProfile();
-        setUser(userData);
-        console.log('User profile loaded after auth success:', userData);
-      } catch (error) {
-        console.error('Failed to load user profile after auth success:', error);
-      }
+      loadUserData().then(() => {
+        // Redirect to dashboard after successful auth
+        if (window.location.pathname !== '/dashboard') {
+          console.log('Auth success, redirecting to dashboard');
+          window.location.replace('/dashboard');
+        }
+      });
     };
 
-    // Authentication error
-    keycloak.onAuthError = (error) => {
-      console.error('Authentication error:', error);
-      setKeycloakError('Authentication failed. Please try again.');
+    keycloak.onAuthError = (errorData) => {
+      console.error('=== AUTH ERROR EVENT ===');
+      console.error('Error:', errorData);
+      setError('Authentication failed');
       setIsAuthenticated(false);
       setUser(null);
     };
 
-    // Logout
     keycloak.onAuthLogout = () => {
-      console.log('User logged out');
-      handleLogout();
+      console.log('=== AUTH LOGOUT EVENT ===');
+      setIsAuthenticated(false);
+      setUser(null);
+      setError(null);
     };
 
-    // Authentication refresh success
-    keycloak.onAuthRefreshSuccess = () => {
-      console.log('Token refresh successful');
+    keycloak.onTokenExpired = () => {
+      console.log('=== TOKEN EXPIRED EVENT ===');
+      keycloak.updateToken(30).catch(() => {
+        console.log('Token refresh failed, logging out');
+        setIsAuthenticated(false);
+        setUser(null);
+      });
     };
 
-    // Authentication refresh error
-    keycloak.onAuthRefreshError = () => {
-      console.log('Token refresh failed');
-      handleLogout();
-    };
-
-    // Cleanup function
     return () => {
-      keycloak.onTokenExpired = null;
       keycloak.onAuthSuccess = null;
       keycloak.onAuthError = null;
       keycloak.onAuthLogout = null;
-      keycloak.onAuthRefreshSuccess = null;
-      keycloak.onAuthRefreshError = null;
+      keycloak.onTokenExpired = null;
     };
-  }, [keycloakInitialized]);
+  }, []);
 
-  // Handle logout
-  const handleLogout = () => {
-    console.log('Handling logout...');
-    setIsAuthenticated(false);
-    setUser(null);
-    setKeycloakError(null);
-  };
-
-  // Handle authentication state changes
-  const handleAuthStateChange = (authenticated, userData) => {
-    setIsAuthenticated(authenticated);
-    setUser(userData);
-  };
-
-  // Show loading spinner while initializing Keycloak
+  // Loading screen
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Initializing authentication...</p>
+          <p className="text-sm text-gray-500 mt-2">State: {keycloakState}</p>
         </div>
       </div>
     );
   }
 
-  // Show error screen if Keycloak failed to initialize
-  if (keycloakError && !keycloakInitialized) {
+  // Error screen
+  if (error && keycloakState === 'error') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md">
@@ -309,7 +296,7 @@ function App() {
             <h3 className="text-lg font-semibold text-red-800 mb-2">
               Authentication Service Error
             </h3>
-            <p className="text-red-600 mb-4">{keycloakError}</p>
+            <p className="text-red-600 mb-4">{error}</p>
             <button
               onClick={() => window.location.reload()}
               className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
@@ -325,41 +312,35 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-gray-50">
-        <AuthHandler 
+        <DebugInfo 
           isAuthenticated={isAuthenticated}
-          isLoading={loading}
-          onAuthStateChange={handleAuthStateChange}
+          user={user}
+          keycloakState={keycloakState}
+          error={error}
         />
         
         <Routes>
-          {/* Login Route */}
           <Route
             path="/login"
             element={
-              <LoginPage
-                onLogin={() => {}}
-                keycloakError={keycloakError}
-              />
+              isAuthenticated ? 
+                <Navigate to="/dashboard" replace /> :
+                <LoginPage 
+                  keycloakError={error} 
+                  onManualCheck={checkAuthStatus}
+                />
             }
           />
           
-          {/* Dashboard Route - Protected */}
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute
-                isAuthenticated={isAuthenticated}
-                isLoading={loading}
-              >
-                <DashboardPage
-                  user={user}
-                  keycloakInstance={keycloak}
-                />
-              </ProtectedRoute>
+              isAuthenticated ? 
+                <DashboardPage user={user} /> :
+                <Navigate to="/login" replace />
             }
           />
           
-          {/* Default Route - Redirect based on auth status */}
           <Route
             path="/"
             element={
@@ -367,13 +348,7 @@ function App() {
             }
           />
           
-          {/* Catch all other routes */}
-          <Route
-            path="*"
-            element={
-              <Navigate to={isAuthenticated ? "/dashboard" : "/login"} replace />
-            }
-          />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </div>
     </Router>
