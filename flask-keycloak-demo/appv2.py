@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, redirect, url_for, session
 from authlib.integrations.flask_client import OAuth
 from authlib.common.security import generate_token
-
+import json
 app = Flask(__name__)
 app.secret_key = "chandan1234"  # keep this secret in production
 
@@ -38,9 +38,10 @@ def login():
 def auth():
     token = oauth.keycloak.authorize_access_token()
     user = oauth.keycloak.parse_id_token(token, nonce=session.get("nonce"))
-    userinfo=jsonify(user)
-    #return userinfo["give_name"]+" "+userinfo["family_name"]
-    return jsonify(user)
+    userinfo=json.dumps(user)
+    y=json.loads(userinfo)
+    return (y["given_name"])+" "+y["family_name"]+"<br>+" "<a href='/logout'>logout</a><br>"
+    #return userinfo
 
 @app.route("/finance")
 def finance():
