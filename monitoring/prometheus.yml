@@ -1,0 +1,89 @@
+# Prometheus configuration file - OpenZiti Enhanced Version
+global:
+  scrape_interval: 15s        # Scrape interval
+  evaluation_interval: 15s    # Rule evaluation interval
+  scrape_timeout: 10s         # Scrape timeout
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+# Rule files
+rule_files:
+  - "rules/*.yml"
+
+# Scrape configurations
+scrape_configs:
+  # 1. Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+          environment: 'development'
+
+  # 2. Zero Trust Gateway (Standard mode)
+  - job_name: 'zero-trust-gateway'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['flask-gateway:5000']
+        labels:
+          service: 'zero-trust-gateway'
+          component: 'api'
+          mode: 'standard'
+
+  # 3. Zero Trust Gateway (OpenZiti enhanced mode)
+  - job_name: 'zero-trust-gateway-ziti'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['flask-gateway-ziti:5001']
+        labels:
+          service: 'zero-trust-gateway'
+          component: 'api'
+          mode: 'openziti'
+
+  # 4. OpenZiti Controller
+  - job_name: 'openziti-controller'
+    metrics_path: '/metrics'
+    scheme: http
+    static_configs:
+      - targets: ['ziti-controller:10080']
+        labels:
+          service: 'openziti'
+          component: 'controller'
+
+  # 5. OpenZiti Edge Router
+  - job_name: 'openziti-router'
+    metrics_path: '/metrics'
+    scheme: http
+    static_configs:
+      - targets: ['ziti-edge-router:10080']
+        labels:
+          service: 'openziti'
+          component: 'edge-router'
+
+  # 6. Keycloak monitoring
+  - job_name: 'keycloak'
+    metrics_path: '/auth/realms/master/metrics'
+    static_configs:
+      - targets: ['keycloak:8080']
+        labels:
+          service: 'keycloak'
+          component: 'auth'
+
+  # 7. Redis monitoring (requires redis_exporter)
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+        labels:
+          service: 'redis'
+          component: 'cache'
+
+  # 8. Node Exporter (system monitoring)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          service: 'system'
