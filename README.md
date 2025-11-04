@@ -1,7 +1,3 @@
-Here’s a professional **GitHub README.md** you can use for your project based on your uploaded PDF *“Final Industry Project Report 2025 – Zero Trust Architecture for Small & Medium-scale Businesses.”*
-
----
-
 # 🛡️ Zero Trust Architecture for Small and Medium Enterprises
 
 This project implements an end-to-end **Zero Trust Security Framework** tailored for **Small and Medium-sized Businesses (SMBs)**. It demonstrates how open-source tools — **Keycloak**, **OpenZiti**, and a custom **Flask Gateway** — can be combined to achieve a cost-effective, scalable, and identity-driven Zero Trust model.
@@ -76,7 +72,7 @@ The system follows the **Zero Trust principles**:
 
 ```bash
 # Clone the repository
-git clone https://github.com/<yourusername>/zero-trust-sme.git
+git clone https://github.com/chchandan/zero-trust-sme.git
 cd zero-trust-sme
 
 # Start all services
