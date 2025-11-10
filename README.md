@@ -185,13 +185,3 @@ All tests passed successfully in the proof-of-concept environment.
 This project demonstrates that **Zero Trust is achievable for SMEs** using open-source and lightweight tools.
 The proposed model delivers practical network invisibility, least privilege enforcement, and comprehensive auditing — all within an affordable and replicable framework.
 
----
-
-### 🧾 License
-
-This project is released under the **MIT License**.
-Feel free to fork, modify, and adapt it for your own research or business environment.
-
----
-
-Would you like me to also include **badges (e.g., Docker build, Python version, MIT license)** and a **diagram (architecture or request flow)** section formatted in Markdown for visual appeal?
